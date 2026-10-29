@@ -1,4 +1,3 @@
-
 const CACHE_NAME = "academic-track-v1";
 
 const APP_FILES = [
@@ -13,7 +12,16 @@ const APP_FILES = [
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(APP_FILES);
+      // Cache each file independently so one failed request cannot leave the
+      // entire app shell empty.
+      return Promise.allSettled(
+        APP_FILES.map((file) =>
+          cache.add(file).catch((error) => {
+            console.warn("Unable to cache " + file + ":", error);
+            throw error;
+          })
+        )
+      );
     })
   );
 
