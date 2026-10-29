@@ -1,0 +1,11 @@
+
+{
+  "name": "Dmofey — Academic Track",
+  "short_name": "Academic Track",
+  "description": "Consistency. Progress. Growth.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#17151f",
+  "theme_color": "#17151f"
+}
