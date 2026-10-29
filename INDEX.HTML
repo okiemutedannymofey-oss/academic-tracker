@@ -1,0 +1,273 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#201D29">
+
+    <title>Academic Tracker 1.0 | Dmofey</title>
+
+    <!-- Connect the stylesheet and JavaScript file. -->
+    <link rel="stylesheet" href="style.css">
+    <script src="script.js" defer></script>
+</head>
+
+<body>
+    <!-- Main header and personal identity. -->
+    <header class="app-header">
+        <a class="brand" href="#" aria-label="Academic Tracker home">
+            <span class="brand-mark">D</span>
+
+            <span class="brand-copy">
+                <strong>Academic Tracker <span>1.0</span></strong>
+                <small>Consistency. Progress. Growth.</small>
+            </span>
+        </a>
+
+        <button id="theme-toggle" class="theme-toggle" type="button"
+            aria-label="Switch colour theme">
+            <span id="theme-icon" aria-hidden="true">☼</span>
+            <span id="theme-label">Light mode</span>
+        </button>
+    </header>
+
+    <main class="app-container">
+
+        <!-- Welcome section. -->
+        <section class="welcome-section">
+            <div>
+                <p class="eyebrow">YOUR PERSONAL STUDY SPACE</p>
+                <h1>Welcome back, <span class="accent">Dmofey.</span></h1>
+                <p class="welcome-description">
+                    Your studies. Your pace. One focused day at a time.
+                </p>
+                <p id="today-date" class="muted">Preparing today's focus...</p>
+            </div>
+
+            <div class="welcome-decoration" aria-hidden="true">
+                <span class="decoration-orbit orbit-one"></span>
+                <span class="decoration-orbit orbit-two"></span>
+                <span class="decoration-core">D</span>
+            </div>
+        </section>
+
+        <!-- Weekly consistency tracker. -->
+        <section class="panel weekly-streak" aria-labelledby="streak-title">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">YOUR CONSISTENCY</p>
+                    <h2 id="streak-title">Study streak</h2>
+                    <p class="muted">Show up, do the work, keep going.</p>
+                </div>
+
+                <div class="streak-summary">
+                    <span class="streak-flame" aria-hidden="true">✦</span>
+                    <strong id="streak-count">0</strong>
+                    <span>day streak</span>
+                </div>
+            </div>
+
+            <div id="weekly-streak-days" class="streak-days"></div>
+
+            <p id="streak-message" class="streak-message">
+                Complete a study task to start building your streak.
+            </p>
+        </section>
+
+        <!-- Academic progress overview. -->
+        <section class="stats-grid" aria-label="Academic progress">
+            <article class="panel stat-card">
+                <div class="stat-icon violet-icon" aria-hidden="true">✦</div>
+                <div>
+                    <p class="stat-label">Study XP</p>
+                    <p class="stat-value" id="xp-count">0 <small>XP</small></p>
+                    <p class="stat-note">Earned through effort</p>
+                </div>
+            </article>
+
+            <article class="panel stat-card">
+                <div class="stat-icon blue-icon" aria-hidden="true">✓</div>
+                <div>
+                    <p class="stat-label">Tasks completed</p>
+                    <p class="stat-value" id="completed-count">0</p>
+                    <p class="stat-note">All-time total</p>
+                </div>
+            </article>
+
+            <article class="panel stat-card">
+                <div class="stat-icon green-icon" aria-hidden="true">▤</div>
+                <div>
+                    <p class="stat-label">Units completed</p>
+                    <p class="stat-value" id="units-completed-count">0</p>
+                    <p class="stat-note">Across your courses</p>
+                </div>
+            </article>
+        </section>
+
+        <!-- Daily tasks generated from the study schedule. -->
+        <section id="daily-tasks" class="panel" aria-labelledby="tasks-title">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">YOUR DAILY PLAN</p>
+                    <h2 id="tasks-title">Today's focus</h2>
+                    <p class="muted">A few meaningful tasks are enough.</p>
+                </div>
+
+                <span id="task-count" class="status-pill">0 / 0 complete</span>
+            </div>
+
+            <div id="task-list" aria-live="polite">
+                <p class="empty-state">Preparing your study tasks...</p>
+            </div>
+
+            <div class="daily-note">
+                <span aria-hidden="true">i</span>
+                <p>
+                    Recall what you learned, practise what you understand,
+                    and revisit what still feels difficult.
+                </p>
+            </div>
+        </section>
+
+        <!-- Course library with modules and units. -->
+        <section id="courses" class="panel" aria-labelledby="courses-title">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">YOUR SEMESTER</p>
+                    <h2 id="courses-title">My courses</h2>
+                    <p class="muted">
+                        Organise your courses around your actual study materials.
+                    </p>
+                </div>
+
+                <span id="course-count" class="status-pill">0 courses</span>
+            </div>
+
+            <div id="course-list">
+                <p class="empty-state">Your courses will appear here.</p>
+            </div>
+
+            <button id="add-course-button" class="primary-button" type="button">
+                <span aria-hidden="true">＋</span> Add a course
+            </button>
+        </section>
+
+        <!-- Revision board for difficult and unfinished work. -->
+        <section id="weekly-review" class="panel" aria-labelledby="review-title">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">STAY ON TRACK</p>
+                    <h2 id="review-title">Revision & catch-up</h2>
+                    <p class="muted">
+                        Keep difficult topics and unfinished work visible.
+                    </p>
+                </div>
+            </div>
+
+            <div id="review-list">
+                <p class="empty-state">Your revision board is clear.</p>
+            </div>
+        </section>
+
+        <!-- Achievements are secondary to academic progress. -->
+        <section id="milestones" class="panel" aria-labelledby="milestones-title">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">MILESTONES</p>
+                    <h2 id="milestones-title">Study milestones</h2>
+                    <p class="muted">Small wins add up over time.</p>
+                </div>
+
+                <span id="achievement-count" class="status-pill">0 earned</span>
+            </div>
+
+            <div id="achievement-list" class="achievement-grid"></div>
+        </section>
+
+    </main>
+
+    <footer class="app-footer">
+        <div class="footer-brand">Academic Tracker <span>1.0</span></div>
+        <p class="creator-credit">Built by Dmofey</p>
+        <p>Your academic journey, one day at a time.</p>
+        <p class="footer-storage">Your study data is stored in this browser.</p>
+    </footer>
+
+    <!-- Dialog for adding a course without browser prompt pop-ups. -->
+    <dialog id="course-dialog" class="app-dialog">
+        <form id="course-form">
+            <div class="dialog-heading">
+                <div>
+                    <p class="eyebrow">COURSE LIBRARY</p>
+                    <h2>Add a course</h2>
+                </div>
+
+                <button id="close-course-dialog" class="icon-button"
+                    type="button" aria-label="Close dialog">×</button>
+            </div>
+
+            <label for="course-code">Course code</label>
+            <input id="course-code" name="courseCode" type="text"
+                placeholder="e.g. CYB 209" required maxlength="30">
+
+            <label for="course-name">Course name</label>
+            <input id="course-name" name="courseName" type="text"
+                placeholder="Full course title" required maxlength="120">
+
+            <label for="course-credits">Credit units</label>
+            <input id="course-credits" name="courseCredits" type="number"
+                min="0" max="30" value="2" required>
+
+            <p id="course-form-error" class="form-error" role="alert"></p>
+
+            <div class="dialog-actions">
+                <button id="cancel-course-button" class="secondary-button"
+                    type="button">Cancel</button>
+                <button class="primary-button" type="submit">Add course</button>
+            </div>
+        </form>
+    </dialog>
+
+    <!-- Dialog for entering module and unit names. -->
+    <dialog id="structure-dialog" class="app-dialog">
+        <form id="structure-form">
+            <div class="dialog-heading">
+                <div>
+                    <p class="eyebrow">COURSE MATERIALS</p>
+                    <h2 id="structure-dialog-title">Add study material</h2>
+                </div>
+
+                <button id="close-structure-dialog" class="icon-button"
+                    type="button" aria-label="Close dialog">×</button>
+            </div>
+
+            <p id="structure-course-name" class="muted"></p>
+
+            <label for="structure-module">Module</label>
+            <select id="structure-module" name="moduleId"></select>
+
+            <div id="new-module-field">
+                <label for="new-module-name">New module name</label>
+                <input id="new-module-name" name="newModuleName" type="text"
+                    placeholder="e.g. Module 5" maxlength="100">
+            </div>
+
+            <label for="structure-unit-name">Unit or topic title</label>
+            <input id="structure-unit-name" name="unitName" type="text"
+                placeholder="Enter the actual title from your material"
+                maxlength="150">
+
+            <p id="structure-form-error" class="form-error" role="alert"></p>
+
+            <div class="dialog-actions">
+                <button id="cancel-structure-button" class="secondary-button"
+                    type="button">Cancel</button>
+                <button id="save-structure-button" class="primary-button"
+                    type="submit">Save</button>
+            </div>
+        </form>
+    </dialog>
+
+</body>
+</html>
