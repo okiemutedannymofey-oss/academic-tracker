@@ -1,7 +1,18 @@
-"icons": [
-  {
-"src": "icons/icon-192.png.png",
-    "sizes": "192x192",
-    "type": "image/png"
-  }
-]
+
+{
+  "name": "Dmofey — Academic Track",
+  "short_name": "Academic Track",
+  "description": "Consistency. Progress. Growth.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#17151f",
+  "theme_color": "#17151f",
+  "icons": [
+    {
+      "src": "icons/icon-192.png.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}
