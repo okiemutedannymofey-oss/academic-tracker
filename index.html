@@ -3,8 +3,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
  <meta name="theme-color" content="#201D29">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
 <!-- PWA setup: connect the manifest and iPhone Home Screen icon. -->
 <link rel="manifest" href="manifest.json">
@@ -14,6 +16,7 @@
 
     <!-- Connect the stylesheet and JavaScript file. -->
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="tracker-enhancements.css?v=20261106-1">
     <script src="script.js" defer></script>
 </head>
 
@@ -34,12 +37,18 @@
             <span id="theme-icon" aria-hidden="true">☼</span>
             <span id="theme-label">Light mode</span>
         </button>
-<a class="theme-toggle" href="https://okiemutedannymofey-oss.github.io/academic-tracker-1.5/Academic%20Tracker%201.5%20version%202/" target="_blank" rel="noopener noreferrer" aria-label="Open Academic Tracker Version 2"><span aria-hidden="true">↗</span> <span>Version 2</span></a></header>
+<a class="theme-toggle" href="https://okiemutedannymofey-oss.github.io/academic-tracker-1.5/Academic%20Tracker%201.5%20version%202/#home" data-open-v15="home" aria-label="Open Academic Tracker 1.5"><span aria-hidden="true">↗</span> <span>Academic Tracker 1.5</span></a></header>
 
+    <nav class="tracker-navigation" aria-label="Main navigation">
+        <a class="active" href="#home-page">Home</a><a href="#courses">My Courses</a>
+        <a href="#progress-page">My Progress</a>
+        <a href="https://okiemutedannymofey-oss.github.io/academic-tracker-1.5/Academic%20Tracker%201.5%20version%202/#study-group" data-open-v15="study-group">Study Group</a>
+        <a href="#milestones">Achievements</a><a href="#settings-page">Settings</a>
+    </nav>
     <main class="app-container">
 
         <!-- Welcome section. -->
-        <section class="welcome-section">
+        <section class="welcome-section" id="home-page">
             <div>
                 <p class="eyebrow">YOUR PERSONAL STUDY SPACE</p>
                 <h1>Welcome back, <span class="accent">Dmofey.</span></h1>
@@ -189,6 +198,26 @@
             <div id="achievement-list" class="achievement-grid"></div>
         </section>
 
+        <section id="progress-page" class="panel v1-extra-page" aria-labelledby="progress-page-title">
+            <div class="section-heading"><div><p class="eyebrow">YOUR DEVELOPMENT</p><h2 id="progress-page-title">My Progress</h2><p class="muted">A clear view of your saved study work.</p></div></div>
+            <div id="progress-content"></div>
+        </section>
+        <section id="settings-page" class="panel v1-extra-page" aria-labelledby="settings-page-title">
+            <div class="section-heading"><div><p class="eyebrow">PERSONALISE YOUR SPACE</p><h2 id="settings-page-title">Settings</h2><p class="muted">Choose a colour theme and appearance mode.</p></div></div>
+            <div class="v1-settings-grid">
+                <div class="v1-setting-field"><label for="palette-select">Colour theme</label>
+                    <select id="palette-select"><option value="arctic-burgundy">Arctic Burgundy</option><option value="ocean">Ocean</option><option value="forest">Forest</option><option value="black-crimson">Black Crimson</option><option value="slate-violet">Slate Violet</option></select>
+                </div>
+                <div class="v1-setting-field"><label for="appearance-mode-select">Appearance mode</label>
+                    <select id="appearance-mode-select"><option value="light">Light mode</option><option value="dark">Dark mode</option><option value="system">Follow device</option></select>
+                </div>
+            </div>
+            <div class="v1-settings-information"><strong>Your data stays in this browser</strong>
+                <p>Courses, study tasks, progress and achievements remain saved on this device.</p>
+                <button id="export-tracker-data" class="secondary-button" type="button">Download a backup</button>
+                <p id="settings-feedback" class="muted" aria-live="polite"></p>
+            </div>
+        </section>
     </main>
 
     <footer class="app-footer">
@@ -197,6 +226,12 @@
         <p>Your academic journey, one day at a time.</p>
         <p class="footer-storage">Your study data is stored in this browser.</p>
     </footer>
+
+    <!-- Open Version 1.5 inside this installed app. -->
+    <dialog id="version-15-dialog" class="version-15-dialog" aria-label="Academic Tracker 1.5">
+        <div class="version-15-toolbar"><strong>Academic Tracker 1.5</strong><button id="close-version-15" class="secondary-button" type="button">Back to Version 1</button></div>
+        <iframe id="version-15-frame" title="Academic Tracker 1.5" loading="lazy"></iframe>
+    </dialog>
 
     <!-- Dialog for adding a course without browser prompt pop-ups. -->
     <dialog id="course-dialog" class="app-dialog">
