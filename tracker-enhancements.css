@@ -1,0 +1,39 @@
+/* Added navigation, progress, settings and theme-aware phone surfaces. */
+html{background:var(--bg)}
+body[data-mode=dark]{color-scheme:dark;--bg:#17161D;--bg-soft:#201E28;--panel:#25222E;--panel-raised:#302B3B;--panel-hover:#393247;--text:#F4F0F8;--muted:#B0A8BB;--subtle:#898194;--accent:#C0A6FF;--accent-strong:#A78AE8;--accent-soft:rgba(177,145,239,.14);--border:#40394C;--border-strong:#554A67;--blue:#A6C5F2;--green:#87C9A5;--amber:#E5BD7D;--pink:#DDA7CA}
+body[data-mode=light]{color-scheme:light;--bg:#E9E5EF;--bg-soft:#E1DBE9;--panel:#F1EDF5;--panel-raised:#EAE4F0;--panel-hover:#DED4E9;--text:#30283A;--muted:#71677E;--subtle:#8D8299;--accent:#7651B2;--accent-strong:#68439F;--accent-soft:rgba(118,81,178,.11);--border:#D7CDDF;--border-strong:#C5B7D3;--blue:#4B6F9F;--green:#367A59;--amber:#946623;--pink:#98547C}
+body[data-theme=arctic-burgundy][data-mode=dark]{--bg:#171419;--bg-soft:#211D23;--panel:#29232B;--panel-raised:#342D36;--panel-hover:#403640;--text:#F5EEF1;--muted:#B5A9B0;--accent:#D98CA5;--accent-strong:#EDA9BF;--accent-soft:rgba(217,140,165,.15);--border:#3B343C;--border-strong:#5A4A55;--green:#D98CA5}
+body[data-theme=arctic-burgundy][data-mode=light]{--bg:#F5F3F4;--bg-soft:#FAF8F9;--panel:#FFF;--panel-raised:#F6F1F3;--panel-hover:#EFE5E9;--text:#292329;--muted:#81777E;--accent:#8D344E;--accent-strong:#71273E;--accent-soft:rgba(141,52,78,.11);--border:#E9E3E6;--border-strong:#D7C9CE;--green:#8D344E}
+body[data-theme=ocean][data-mode=dark]{--bg:#11191E;--bg-soft:#1A252C;--panel:#202D35;--panel-raised:#2A3941;--panel-hover:#34464F;--text:#EDF6FA;--muted:#A8B9C2;--accent:#7BB7D8;--accent-strong:#9BCDE6;--accent-soft:rgba(123,183,216,.15);--border:#35454E;--border-strong:#4B636E;--green:#7BB7D8}
+body[data-theme=ocean][data-mode=light]{--bg:#F1F6F9;--bg-soft:#F8FBFD;--panel:#FFF;--panel-raised:#EFF5F8;--panel-hover:#E5EEF3;--text:#202B33;--muted:#71808A;--accent:#326A92;--accent-strong:#245372;--accent-soft:rgba(50,106,146,.12);--border:#DFE8ED;--border-strong:#C8D7DF;--green:#326A92}
+body[data-theme=forest][data-mode=dark]{--bg:#020202;--bg-soft:#0C100E;--panel:#101512;--panel-raised:#171F1B;--panel-hover:#202C26;--text:#F1FFF9;--muted:#A1B3AA;--accent:#00F6AC;--accent-strong:#00CF91;--accent-soft:rgba(0,246,172,.14);--border:#283A32;--border-strong:#3C5A4D;--blue:#00F6AC;--green:#00F6AC}
+body[data-theme=forest][data-mode=light]{--bg:#E9FFF7;--bg-soft:#F3FFFA;--panel:#FFF;--panel-raised:#E8FFF6;--panel-hover:#D7FFF0;--text:#06291F;--muted:#42685B;--accent:#00F6AC;--accent-strong:#00CF91;--accent-soft:rgba(0,246,172,.18);--border:#B7E9D7;--border-strong:#75D9B7;--blue:#008A63;--green:#008A63}
+body[data-theme=black-crimson][data-mode=dark]{--bg:#0D0B0B;--bg-soft:#171313;--panel:#1D1818;--panel-raised:#282020;--panel-hover:#342728;--text:#F5F2ED;--muted:#BCB2B0;--accent:#8D0D1A;--accent-strong:#A81423;--accent-soft:rgba(141,13,26,.22);--border:#3A2C2D;--border-strong:#624348;--green:#8D0D1A}
+body[data-theme=black-crimson][data-mode=light]{--bg:#F5F2ED;--bg-soft:#FBF8F2;--panel:#FFF;--panel-raised:#F1EBE5;--panel-hover:#E9DEDA;--text:#0D0B0B;--muted:#655B59;--accent:#8D0D1A;--accent-strong:#A81423;--accent-soft:rgba(141,13,26,.1);--border:#E5D9D5;--border-strong:#CDB9B5;--green:#8D0D1A}
+body{background:radial-gradient(ellipse at 8% 0%,var(--accent-soft),transparent 34%),var(--bg)}
+.tracker-navigation{position:sticky;top:0;z-index:20;display:flex;gap:7px;overflow-x:auto;padding:10px max(6%,calc((100% - 1160px)/2));background:var(--panel);border-bottom:1px solid var(--border)}
+.tracker-navigation a{flex:0 0 auto;padding:8px 12px;border-radius:9px;color:var(--muted);font-size:.8rem;font-weight:700}
+.tracker-navigation a:hover,.tracker-navigation a.active{color:var(--accent);background:var(--accent-soft)}
+#home-page,#courses,#progress-page,#milestones,#settings-page,#weekly-review{scroll-margin-top:75px}
+.v1-progress-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.v1-progress-summary article,.v1-course-progress{padding:15px;background:var(--bg-soft);border:1px solid var(--border);border-radius:12px}
+.v1-progress-summary article span{display:block;color:var(--muted);font-size:.74rem}
+.v1-progress-summary article strong{display:block;margin-top:5px;color:var(--accent);font-size:1.4rem}
+.v1-overall-track{height:8px;overflow:hidden;margin:8px 0 18px;background:var(--panel-raised);border-radius:9px}
+.v1-overall-track span{display:block;height:100%;background:var(--accent);border-radius:inherit;transition:width 250ms ease}
+.v1-course-progress-list{display:grid;gap:10px}
+.v1-course-progress>div:first-child{display:flex;justify-content:space-between;gap:10px;font-size:.78rem}
+.v1-course-progress>div:first-child span{color:var(--muted);white-space:nowrap}
+#progress-content h3{margin-top:20px;font-size:.95rem}
+.v1-activity-history{display:grid;gap:5px;margin-top:8px}
+.v1-activity-history p{padding:8px 0;color:var(--muted);font-size:.8rem;border-bottom:1px solid var(--border)}
+.v1-settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
+.v1-setting-field{display:grid;gap:7px}.v1-setting-field label{font-size:.82rem;font-weight:700}
+.v1-setting-field select{min-height:43px;padding:9px 12px;color:var(--text);background:var(--bg-soft);border:1px solid var(--border-strong);border-radius:9px}
+.v1-settings-information{margin-top:20px;padding:16px;background:var(--bg-soft);border:1px solid var(--border);border-radius:12px}
+.v1-settings-information p{margin:5px 0 12px;color:var(--muted);font-size:.8rem}
+.version-15-dialog{width:100vw;max-width:none;height:100dvh;max-height:none;margin:0;padding:0;overflow:hidden;border:0;border-radius:0;color:var(--text);background:var(--bg)}
+.version-15-dialog::backdrop{background:var(--bg)}
+.version-15-toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;height:54px;padding:7px 14px;color:var(--text);background:var(--panel);border-bottom:1px solid var(--border)}
+.version-15-dialog iframe{display:block;width:100%;height:calc(100dvh - 54px);border:0;background:var(--bg)}
+@media(max-width:700px){.tracker-navigation{padding:8px 4%}.v1-progress-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.v1-settings-grid{grid-template-columns:1fr}.v1-course-progress>div:first-child{flex-direction:column;gap:2px}.version-15-toolbar{height:50px}.version-15-dialog iframe{height:calc(100dvh - 50px)}}
