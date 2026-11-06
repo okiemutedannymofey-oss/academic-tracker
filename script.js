@@ -893,12 +893,10 @@ function saveStructureFromForm(event) {
     renderAll();
 }
 
-/* Show weak topics and unfinished quests from previous days. */
-
+/* Show explicitly marked revision topics and only very recent missed tasks. */
 function renderReview() {
     const container = document.getElementById("review-list");
     container.replaceChildren();
-
     const items = [];
 
     appData.courses.forEach(course => {
@@ -914,14 +912,17 @@ function renderReview() {
         });
     });
 
+    // A daily reminder is temporary. Keep at most the two previous days visible.
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 2);
+    const cutoffKey = todayKey(cutoff);
     Object.entries(appData.questsByDate).forEach(([date, quests]) => {
-        if (date >= todayKey()) return;
-
+        if (date >= todayKey() || date < cutoffKey) return;
         quests.forEach(quest => {
             if (!quest.completed) {
                 items.push({
                     title: quest.title,
-                    detail: `Unfinished task from ${date}`
+                    detail: `Unfinished daily task · ${date}`
                 });
             }
         });
@@ -931,7 +932,7 @@ function renderReview() {
         const empty = document.createElement("p");
         empty.className = "empty-state";
         empty.textContent =
-            "Your revision board is clear. Mark a unit 'Needs practice' to add it here.";
+            "Your revision board is clear. Mark a unit 'Needs practice' to keep that topic here.";
         container.appendChild(empty);
         return;
     }
@@ -939,13 +940,10 @@ function renderReview() {
     items.forEach(item => {
         const row = document.createElement("div");
         row.className = "review-item";
-
         const title = document.createElement("strong");
         title.textContent = item.title;
-
         const detail = document.createElement("p");
         detail.textContent = item.detail;
-
         row.append(title, detail);
         container.appendChild(row);
     });
@@ -1043,43 +1041,110 @@ function renderAchievements() {
         `${unlockedCount} earned`;
 }
 
-/* Apply the chosen theme. */
+/* Apply a selected palette and appearance mode without changing saved study data. */
 
-function applyTheme(theme) {
-    const isLight = theme === "light";
+const PALETTE_KEY = "academicTrackerDmofeyPalette_v1";
+const PALETTES = {
+    "arctic-burgundy": "Arctic Burgundy",
+    "ocean": "Ocean",
+    "forest": "Forest",
+    "black-crimson": "Black Crimson",
+    "slate-violet": "Slate Violet"
+};
 
-    document.body.classList.toggle("light-theme", isLight);
-    document.getElementById("theme-icon").textContent = isLight ? "☾" : "☼";
-    document.getElementById("theme-label").textContent =
-        isLight ? "Dark mode" : "Light mode";
+function readAppearance() {
+    try {
+        const saved = JSON.parse(localStorage.getItem(PALETTE_KEY) || "{}");
+        return {
+            palette: Object.hasOwn(PALETTES, saved.palette) ? saved.palette : "slate-violet",
+            mode: ["light", "dark", "system"].includes(saved.mode) ? saved.mode : null
+        };
+    } catch {
+        return { palette: "slate-violet", mode: null };
+    }
 }
 
-/* Load and save the theme preference. */
+function saveAppearance(preferences) {
+    try {
+        localStorage.setItem(PALETTE_KEY, JSON.stringify(preferences));
+    } catch (error) {
+        console.warn("Could not save appearance settings:", error);
+    }
+}
+
+function applyTheme(mode) {
+    const preferences = readAppearance();
+    const selectedMode = preferences.mode || (["light", "dark"].includes(mode) ? mode : "dark");
+    const isDark = selectedMode === "system"
+        ? Boolean(window.matchMedia?.("(prefers-color-scheme: dark)").matches)
+        : selectedMode === "dark";
+    const resolvedMode = isDark ? "dark" : "light";
+
+    document.body.classList.toggle("light-theme", !isDark);
+    document.body.dataset.theme = preferences.palette;
+    document.body.dataset.mode = resolvedMode;
+
+    const icon = document.getElementById("theme-icon");
+    const label = document.getElementById("theme-label");
+    if (icon) icon.textContent = isDark ? "☼" : "☾";
+    if (label) label.textContent = isDark ? "Light mode" : "Dark mode";
+
+    const meta = document.querySelector('meta[name="theme-color"]');
+    const background = getComputedStyle(document.body).getPropertyValue("--bg").trim();
+    if (meta && background) meta.content = background;
+
+    const paletteSelect = document.getElementById("palette-select");
+    const modeSelect = document.getElementById("appearance-mode-select");
+    if (paletteSelect) paletteSelect.value = preferences.palette;
+    if (modeSelect) modeSelect.value = selectedMode;
+}
 
 function initialiseTheme() {
-    let theme = "dark";
-
+    let legacyMode = "dark";
     try {
-        theme = localStorage.getItem(THEME_KEY) || "dark";
+        legacyMode = localStorage.getItem(THEME_KEY) || "dark";
     } catch (error) {
         console.warn("Could not load theme preference:", error);
     }
 
-    applyTheme(theme);
+    const preferences = readAppearance();
+    if (!preferences.mode) {
+        preferences.mode = ["light", "dark"].includes(legacyMode) ? legacyMode : "dark";
+        saveAppearance(preferences);
+    }
+    applyTheme(preferences.mode);
 
-    document.getElementById("theme-toggle").addEventListener("click", () => {
-        const nextTheme = document.body.classList.contains("light-theme")
-            ? "dark"
-            : "light";
-
-        applyTheme(nextTheme);
-
-        try {
-            localStorage.setItem(THEME_KEY, nextTheme);
-        } catch (error) {
-            console.warn("Could not save theme preference:", error);
-        }
+    const toggle = document.getElementById("theme-toggle");
+    toggle?.addEventListener("click", () => {
+        const current = readAppearance();
+        const next = document.body.dataset.mode === "dark" ? "light" : "dark";
+        current.mode = next;
+        saveAppearance(current);
+        try { localStorage.setItem(THEME_KEY, next); } catch {}
+        applyTheme(next);
     });
+
+    document.getElementById("palette-select")?.addEventListener("change", event => {
+        const current = readAppearance();
+        if (!Object.hasOwn(PALETTES, event.target.value)) return;
+        current.palette = event.target.value;
+        saveAppearance(current);
+        applyTheme(current.mode);
+    });
+
+    document.getElementById("appearance-mode-select")?.addEventListener("change", event => {
+        const current = readAppearance();
+        if (!["light", "dark", "system"].includes(event.target.value)) return;
+        current.mode = event.target.value;
+        saveAppearance(current);
+        try { localStorage.setItem(THEME_KEY, event.target.value); } catch {}
+        applyTheme(current.mode);
+    });
+
+    window.matchMedia?.("(prefers-color-scheme: dark)")
+        .addEventListener?.("change", () => {
+            if (readAppearance().mode === "system") applyTheme("system");
+        });
 }
 
 /* Refresh all visible dashboard sections after a change. */
@@ -1092,6 +1157,178 @@ function renderAll() {
     renderReview();
     renderAchievements();
 }
+
+/* Progress, navigation and the in-app Version 1.5 view. */
+
+function readSavedTrackerData() {
+    try {
+        const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+        return data && Array.isArray(data.courses) ? data : null;
+    } catch {
+        return null;
+    }
+}
+
+function savedCourseUnits(course) {
+    return (course.modules || []).flatMap(module =>
+        (module.units || []).map(unit => ({
+            ...unit,
+            moduleName: module.name
+        }))
+    );
+}
+
+function renderProgressPage() {
+    const container = document.getElementById("progress-content");
+    if (!container) return;
+    const data = readSavedTrackerData();
+
+    if (!data) {
+        container.textContent = "Your saved study statistics will appear here.";
+        return;
+    }
+
+    const courses = data.courses;
+    const allUnits = courses.flatMap(course =>
+        savedCourseUnits(course).map(unit => ({ ...unit, courseCode: course.code }))
+    );
+    const completed = allUnits.filter(unit => unit.status === "completed").length;
+    const unfinished = allUnits.length - completed;
+    const overall = allUnits.length ? Math.round(completed / allUnits.length * 100) : 0;
+    const tasks = Object.entries(data.questsByDate || {}).flatMap(([date, list]) =>
+        (Array.isArray(list) ? list : []).map(task => ({ ...task, date }))
+    );
+    const completedTasks = tasks.filter(task => task.completed);
+    const dates = new Set(Array.isArray(data.studyDates) ? data.studyDates : []);
+
+    const summary = document.createElement("div");
+    summary.className = "v1-progress-summary";
+    summary.innerHTML =
+        '<article><span>Overall course progress</span><strong>' + overall + '%</strong></article>' +
+        '<article><span>Completed units</span><strong>' + completed + '</strong></article>' +
+        '<article><span>Unfinished units</span><strong>' + unfinished + '</strong></article>' +
+        '<article><span>Study XP</span><strong>' + (Number(data.totalXP) || 0) + '</strong></article>';
+
+    const track = document.createElement("div");
+    track.className = "v1-overall-track";
+    const fill = document.createElement("span");
+    fill.style.width = overall + "%";
+    track.appendChild(fill);
+
+    const list = document.createElement("div");
+    list.className = "v1-course-progress-list";
+    courses.forEach(course => {
+        const units = savedCourseUnits(course);
+        const done = units.filter(unit => unit.status === "completed").length;
+        const percent = units.length ? Math.round(done / units.length * 100) : 0;
+        const row = document.createElement("article");
+        row.className = "v1-course-progress";
+        const heading = document.createElement("div");
+        heading.innerHTML = "<strong></strong><span></span>";
+        heading.querySelector("strong").textContent = course.code + " · " + course.name;
+        heading.querySelector("span").textContent = units.length
+            ? done + " of " + units.length + " units · " + percent + "%"
+            : "No units added yet";
+        const bar = document.createElement("div");
+        bar.className = "v1-overall-track";
+        const barFill = document.createElement("span");
+        barFill.style.width = percent + "%";
+        bar.appendChild(barFill);
+        row.append(heading, bar);
+        list.appendChild(row);
+    });
+
+    const history = document.createElement("div");
+    history.className = "v1-activity-history";
+    const recentDates = [...dates].sort().reverse().slice(0, 7);
+    if (recentDates.length) {
+        recentDates.forEach(date => {
+            const dateTasks = completedTasks.filter(task => task.date === date);
+            const item = document.createElement("p");
+            item.textContent = new Date(date + "T12:00:00").toLocaleDateString("en-GB", {
+                weekday: "short", day: "numeric", month: "short"
+            }) + " · " + (dateTasks.length ? dateTasks.length + " task(s) completed" : "Study activity recorded");
+            history.appendChild(item);
+        });
+    } else {
+        history.textContent = "No study activity recorded yet.";
+    }
+
+    container.replaceChildren(summary, track, list);
+    const historyTitle = document.createElement("h3");
+    historyTitle.textContent = "Recent study activity";
+    container.append(historyTitle, history);
+}
+
+function openVersion15(page) {
+    const dialog = document.getElementById("version-15-dialog");
+    const frame = document.getElementById("version-15-frame");
+    if (!dialog || !frame) return;
+    const target = page === "study-group" ? "study-group" : "home";
+    frame.src = "https://okiemutedannymofey-oss.github.io/academic-tracker-1.5/Academic%20Tracker%201.5%20version%202/#" + target;
+    if (!dialog.open) dialog.showModal();
+}
+
+function initialiseVersion15Navigation() {
+    document.querySelectorAll("[data-open-v15]").forEach(link => {
+        link.addEventListener("click", event => {
+            event.preventDefault();
+            openVersion15(link.dataset.openV15);
+        });
+    });
+
+    document.getElementById("close-version-15")?.addEventListener("click", () => {
+        const dialog = document.getElementById("version-15-dialog");
+        const frame = document.getElementById("version-15-frame");
+        dialog?.close();
+        if (frame) frame.src = "";
+    });
+
+    document.querySelectorAll(".tracker-navigation a[href^='#']").forEach(link => {
+        link.addEventListener("click", () => {
+            document.querySelectorAll(".tracker-navigation a").forEach(item =>
+                item.classList.toggle("active", item === link)
+            );
+        });
+    });
+
+    window.addEventListener("message", event => {
+        if (event.origin !== location.origin || event.data?.source !== "academic-tracker-15-theme") return;
+        const color = String(event.data.background || "");
+        if (!/^#[\da-f]{3,8}$/i.test(color)) return;
+        const meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.content = color;
+        document.documentElement.style.backgroundColor = color;
+        document.body.style.backgroundColor = color;
+    });
+
+    renderProgressPage();
+
+    document.getElementById("export-tracker-data")?.addEventListener("click", () => {
+        const data = readSavedTrackerData();
+        const feedback = document.getElementById("settings-feedback");
+        if (!data) {
+            if (feedback) feedback.textContent = "There is no saved tracker data to download yet.";
+            return;
+        }
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "academic-tracker-backup-" + todayKey() + ".json";
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        if (feedback) feedback.textContent = "Your backup has been downloaded.";
+    });
+}
+
+const originalRenderAllForProgress = renderAll;
+renderAll = function() {
+    originalRenderAllForProgress();
+    renderProgressPage();
+};
+
+document.addEventListener("DOMContentLoaded", initialiseVersion15Navigation);
 
 /* Connect buttons and forms, then start the application. */
 
