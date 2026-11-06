@@ -1,4 +1,4 @@
-const CACHE_NAME = "academic-track-v1";
+const CACHE_NAME = "academic-track-v2-link";
 
 const APP_FILES = [
   "./",
