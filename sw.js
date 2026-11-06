@@ -1,10 +1,11 @@
-const CACHE_NAME = "academic-track-v2-link";
+const CACHE_NAME = "academic-tracker-v1-20261106-1";
 
 const APP_FILES = [
   "./",
   "./index.html",
   "./style.css",
   "./script.js",
+  "./tracker-enhancements.css?v=20261106-1",
   "./manifest.json",
   "./icons/icon-192.png.png"
 ];
@@ -33,7 +34,7 @@ self.addEventListener("activate", (event) => {
     caches.keys().then((keys) => {
       return Promise.all(
         keys
-          .filter((key) => key !== CACHE_NAME)
+          .filter((key) => (key === "academic-track-v2-link" || key.startsWith("academic-tracker-v1-")) && key !== CACHE_NAME)
           .map((key) => caches.delete(key))
       );
     })
