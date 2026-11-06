@@ -1282,6 +1282,7 @@ function initialiseVersion15Navigation() {
         const frame = document.getElementById("version-15-frame");
         dialog?.close();
         if (frame) frame.src = "";
+        applyTheme(readAppearance().mode || "dark");
     });
 
     document.querySelectorAll(".tracker-navigation a[href^='#']").forEach(link => {
