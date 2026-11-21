@@ -1,4 +1,4 @@
-const CACHE_NAME = "academic-tracker-v1-20261106-1";
+const CACHE_NAME = "academic-tracker-v1-20261121-1";
 
 const APP_FILES = [
   "./",
@@ -68,3 +68,4 @@ self.addEventListener("fetch", (event) => {
     })
   );
 });
+
