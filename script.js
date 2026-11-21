@@ -705,7 +705,9 @@ function renderCourses() {
         addModuleButton.type = "button";
         addModuleButton.className = "secondary-button";
         addModuleButton.textContent = "+ Add module";
-        addModuleButton.addEventListener("click", () => openStructureDialog(course.id, "module"));
+        addModuleButton.addEventListener("click", () =>
+            openCourseConfigDialog(course.id, "modules")
+        );
 
         const addUnitButton = document.createElement("button");
         addUnitButton.type = "button";
@@ -713,11 +715,219 @@ function renderCourses() {
         addUnitButton.textContent = "+ Add unit";
         addUnitButton.addEventListener("click", () => openStructureDialog(course.id, "unit"));
 
-        actions.append(addModuleButton, addUnitButton);
+        const editCourseButton = document.createElement("button");
+        editCourseButton.type = "button";
+        editCourseButton.className = "secondary-button";
+        editCourseButton.textContent = "Edit";
+        editCourseButton.addEventListener("click", () =>
+            openCourseConfigDialog(course.id, "edit")
+        );
+
+        actions.append(addModuleButton, addUnitButton, editCourseButton);
 
         card.append(top, progressCopy, track, moduleList, actions);
         container.appendChild(card);
     });
+}
+
+/* Edit course details or configure its complete module/unit structure. */
+
+let courseConfigId = null;
+let courseConfigMode = "edit";
+
+function openCourseConfigDialog(courseId, mode) {
+    const course = appData.courses.find(item => item.id === courseId);
+    if (!course) return;
+
+    courseConfigId = courseId;
+    courseConfigMode = mode;
+    const dialog = document.getElementById("course-config-dialog");
+    const form = document.getElementById("course-config-form");
+    const fields = document.getElementById("course-config-fields");
+    const isEdit = mode === "edit";
+
+    document.getElementById("course-config-title").textContent =
+        isEdit ? "Edit course" : "Configure course modules";
+    document.getElementById("save-course-config").textContent =
+        isEdit ? "Save course" : "Save modules";
+    document.getElementById("course-config-error").textContent = "";
+
+    fields.innerHTML = isEdit ? `
+        <label for="config-course-code">Course code</label>
+        <input id="config-course-code" name="courseCode" required maxlength="30">
+        <label for="config-course-credits">Credit unit</label>
+        <input id="config-course-credits" name="courseCredits" type="number"
+            min="0" max="30" required>
+        <label for="config-course-name">Course title</label>
+        <input id="config-course-name" name="courseName" required maxlength="120">
+        <label for="config-module-count">Number of modules</label>
+        <select id="config-module-count" name="moduleCount"></select>
+        <div id="config-module-list"></div>
+    ` : `
+        <p id="config-course-caption" class="muted"></p>
+        <label for="config-module-count">Number of modules</label>
+        <select id="config-module-count" name="moduleCount"></select>
+        <div id="config-module-list"></div>
+    `;
+
+    if (isEdit) {
+        document.getElementById("config-course-code").value = course.code;
+        document.getElementById("config-course-credits").value = course.credits;
+        document.getElementById("config-course-name").value = course.name;
+    } else {
+        document.getElementById("config-course-caption").textContent =
+            `${course.code} · ${course.name}`;
+    }
+
+    const countSelect = document.getElementById("config-module-count");
+    const moduleList = document.getElementById("config-module-list");
+    const currentCount = course.modules.length;
+    const maxCount = Math.max(20, currentCount);
+
+    function moduleDrafts() {
+        return [...moduleList.querySelectorAll(".config-module")].map(section => ({
+            id: section.dataset.moduleId,
+            unitCount: Number(section.querySelector(".config-unit-count").value),
+            units: [...section.querySelectorAll(".config-unit-status")].map(select => ({
+                id: select.dataset.unitId,
+                status: select.value
+            }))
+        }));
+    }
+
+    function renderModules(drafts = []) {
+        const count = Number(countSelect.value) || 0;
+        moduleList.innerHTML = Array.from({ length: count }, (_, index) => {
+            const saved = course.modules[index];
+            const draft = drafts[index];
+            const moduleId = draft?.id || saved?.id || makeId();
+            const unitCount = draft?.unitCount ?? saved?.units?.length ?? 0;
+            const units = Array.from({ length: unitCount }, (unused, unitIndex) => {
+                const savedUnit = saved?.units?.[unitIndex];
+                const draftUnit = draft?.units?.[unitIndex];
+                const unitId = draftUnit?.id || savedUnit?.id || makeId();
+                const status = draftUnit?.status || savedUnit?.status || "new";
+                return `
+                    <div class="config-unit-row">
+                        <span>Unit ${unitIndex + 1}</span>
+                        <select class="config-unit-status" data-unit-id="${unitId}"
+                            aria-label="Progress for Module ${index + 1}, Unit ${unitIndex + 1}">
+                            <option value="new" ${status === "new" ? "selected" : ""}>Not started</option>
+                            <option value="in-progress" ${status === "in-progress" ? "selected" : ""}>In progress</option>
+                            <option value="needs-practice" ${status === "needs-practice" ? "selected" : ""}>Needs practice</option>
+                            <option value="completed" ${status === "completed" ? "selected" : ""}>Completed</option>
+                        </select>
+                    </div>`;
+            }).join("");
+
+            return `
+                <section class="config-module" data-module-id="${moduleId}">
+                    <h3>Module ${index + 1}</h3>
+                    <label for="config-units-${index}">Number of units in Module ${index + 1}</label>
+                    <select id="config-units-${index}" class="config-unit-count">
+                        ${Array.from({ length: 31 }, (unused, n) =>
+                            `<option value="${n}" ${n === unitCount ? "selected" : ""}>${n} unit${n === 1 ? "" : "s"}</option>`
+                        ).join("")}
+                    </select>
+                    <div class="config-unit-list">${units}</div>
+                </section>`;
+        }).join("");
+    }
+
+    countSelect.replaceChildren();
+    for (let count = 0; count <= maxCount; count += 1) {
+        const option = document.createElement("option");
+        option.value = count;
+        option.textContent = `${count} module${count === 1 ? "" : "s"}`;
+        option.selected = count === currentCount;
+        countSelect.appendChild(option);
+    }
+    countSelect.addEventListener("change", () => renderModules(moduleDrafts()));
+    moduleList.addEventListener("change", event => {
+        if (!event.target.matches(".config-unit-count")) return;
+        const section = event.target.closest(".config-module");
+        const index = [...moduleList.children].indexOf(section);
+        const draft = moduleDrafts()[index];
+        const saved = course.modules[index];
+        const amount = Number(event.target.value) || 0;
+        section.querySelector(".config-unit-list").innerHTML =
+            Array.from({ length: amount }, (unused, unitIndex) => {
+                const old = draft?.units?.[unitIndex] || saved?.units?.[unitIndex];
+                const unitId = old?.id || makeId();
+                const status = old?.status || "new";
+                return `<div class="config-unit-row"><span>Unit ${unitIndex + 1}</span>
+                    <select class="config-unit-status" data-unit-id="${unitId}"
+                        aria-label="Progress for Module ${index + 1}, Unit ${unitIndex + 1}">
+                        <option value="new" ${status === "new" ? "selected" : ""}>Not started</option>
+                        <option value="in-progress" ${status === "in-progress" ? "selected" : ""}>In progress</option>
+                        <option value="needs-practice" ${status === "needs-practice" ? "selected" : ""}>Needs practice</option>
+                        <option value="completed" ${status === "completed" ? "selected" : ""}>Completed</option>
+                    </select></div>`;
+            }).join("");
+    });
+
+    renderModules();
+    dialog.showModal();
+}
+
+function closeCourseConfigDialog() {
+    document.getElementById("course-config-dialog").close();
+    courseConfigId = null;
+}
+
+function saveCourseConfig(event) {
+    event.preventDefault();
+    const course = appData.courses.find(item => item.id === courseConfigId);
+    if (!course) return;
+
+    const error = document.getElementById("course-config-error");
+    error.textContent = "";
+    const codeInput = document.getElementById("config-course-code");
+    const nameInput = document.getElementById("config-course-name");
+    const creditsInput = document.getElementById("config-course-credits");
+    if (courseConfigMode === "edit") {
+        const code = codeInput.value.trim().toUpperCase();
+        const name = nameInput.value.trim();
+        const credits = Number(creditsInput.value);
+        if (appData.courses.some(item => item.id !== course.id && item.code === code)) {
+            error.textContent = "A course with this code already exists.";
+            return;
+        }
+        if (!Number.isInteger(credits) || credits < 0 || credits > 30) {
+            error.textContent = "Enter a valid number of credit units.";
+            return;
+        }
+        course.code = code;
+        course.name = name;
+        course.credits = credits;
+    }
+
+    const count = Number(document.getElementById("config-module-count").value) || 0;
+    const existing = course.modules;
+    const moduleSections = [...document.querySelectorAll("#config-module-list .config-module")];
+    course.modules = moduleSections.map((section, index) => {
+        const previous = existing[index];
+        const units = [...section.querySelectorAll(".config-unit-status")].map((select, unitIndex) => {
+            const oldUnit = previous?.units?.[unitIndex];
+            return {
+                id: select.dataset.unitId || oldUnit?.id || makeId(),
+                name: `Unit ${unitIndex + 1}`,
+                status: select.value,
+                lastStudied: oldUnit?.lastStudied || null
+            };
+        });
+        return {
+            id: section.dataset.moduleId || previous?.id || makeId(),
+            name: `Module ${index + 1}`,
+            units
+        };
+    }).slice(0, count);
+
+    delete appData.questsByDate[todayKey()];
+    saveData();
+    closeCourseConfigDialog();
+    generateQuests();
+    renderAll();
 }
 
 /* Course dialog: add a new course using a proper form. */
@@ -1350,6 +1560,15 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("course-form")
         .addEventListener("submit", addCourseFromForm);
 
+    document.getElementById("close-course-config")
+        .addEventListener("click", closeCourseConfigDialog);
+
+    document.getElementById("cancel-course-config")
+        .addEventListener("click", closeCourseConfigDialog);
+
+    document.getElementById("course-config-form")
+        .addEventListener("submit", saveCourseConfig);
+
     document.getElementById("close-structure-dialog")
         .addEventListener("click", closeStructureDialog);
 
@@ -1361,3 +1580,4 @@ document.addEventListener("DOMContentLoaded", () => {
 
     renderAll();
 });
+
