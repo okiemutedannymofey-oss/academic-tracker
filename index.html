@@ -290,45 +290,13 @@
         </form>
     </dialog>
 
-    <!-- Dialog for entering module and unit names. -->
-    <dialog id="structure-dialog" class="app-dialog">
-        <form id="structure-form">
-            <div class="dialog-heading">
-                <div>
-                    <p class="eyebrow">COURSE MATERIALS</p>
-                    <h2 id="structure-dialog-title">Add study material</h2>
-                </div>
-
-                <button id="close-structure-dialog" class="icon-button"
-                    type="button" aria-label="Close dialog">×</button>
-            </div>
-
-            <p id="structure-course-name" class="muted"></p>
-
-            <label for="structure-module">Module</label>
-            <select id="structure-module" name="moduleId"></select>
-
-            <div id="new-module-field">
-                <label for="new-module-name">New module name</label>
-                <input id="new-module-name" name="newModuleName" type="text"
-                    placeholder="e.g. Module 5" maxlength="100">
-            </div>
-
-            <label for="structure-unit-name">Unit or topic title</label>
-            <input id="structure-unit-name" name="unitName" type="text"
-                placeholder="Enter the actual title from your material"
-                maxlength="150">
-
-            <p id="structure-form-error" class="form-error" role="alert"></p>
-
-            <div class="dialog-actions">
-                <button id="cancel-structure-button" class="secondary-button"
-                    type="button">Cancel</button>
-                <button id="save-structure-button" class="primary-button"
-                    type="submit">Save</button>
-            </div>
-        </form>
-    </dialog>
+    <!-- Dialog for adding units to a module. -->
+<dialog id="structure-dialog" class="app-dialog"><form id="structure-form">
+<div class="dialog-heading"><div><p class="eyebrow">COURSE MATERIALS</p><h2 id="structure-dialog-title">Add units</h2></div><button id="close-structure-dialog" class="icon-button" type="button" aria-label="Close dialog">×</button></div>
+<p id="structure-course-name" class="muted"></p><label for="structure-module">Choose module</label><select id="structure-module" name="moduleId" required></select>
+<label for="structure-unit-count">Number of units to add</label><select id="structure-unit-count" name="unitCount" required></select>
+<p id="structure-form-error" class="form-error" role="alert"></p><div class="dialog-actions"><button id="cancel-structure-button" class="secondary-button" type="button">Cancel</button><button id="save-structure-button" class="primary-button" type="submit">Add units</button></div>
+</form></dialog>
 
     <!-- Register the service worker for offline support. -->
     <script>

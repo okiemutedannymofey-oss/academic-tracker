@@ -981,51 +981,35 @@ function addCourseFromForm(event) {
 let structureCourseId = null;
 let structureMode = "unit";
 
-function openStructureDialog(courseId, mode) {
+function openStructureDialog(courseId) {
     const course = appData.courses.find(item => item.id === courseId);
     if (!course) return;
-
+    if (!course.modules.length) {
+        alert("Add a module first, then add units to it.");
+        return;
+    }
     structureCourseId = courseId;
-    structureMode = mode;
-
     const dialog = document.getElementById("structure-dialog");
     const moduleSelect = document.getElementById("structure-module");
-    const newModuleField = document.getElementById("new-module-field");
-    const unitNameInput = document.getElementById("structure-unit-name");
-
+    const countSelect = document.getElementById("structure-unit-count");
     document.getElementById("structure-form").reset();
     document.getElementById("structure-form-error").textContent = "";
-    document.getElementById("structure-course-name").textContent =
-        `${course.code} · ${course.name}`;
-
+    document.getElementById("structure-course-name").textContent = course.code + " · " + course.name;
     moduleSelect.replaceChildren();
-
     course.modules.forEach(module => {
         const option = document.createElement("option");
         option.value = module.id;
         option.textContent = module.name;
         moduleSelect.appendChild(option);
     });
-
-    const needsModule = mode === "module";
-    document.getElementById("structure-dialog-title").textContent =
-        needsModule ? "Add a module" : "Add a unit or topic";
-
-    newModuleField.hidden = !needsModule;
-    moduleSelect.disabled = needsModule;
-
-    if (needsModule) {
-        unitNameInput.closest("label")?.removeAttribute("hidden");
-        unitNameInput.placeholder = "Optional: enter a unit title too";
-    } else {
-        unitNameInput.placeholder = "Enter the actual title from your material";
+    countSelect.replaceChildren();
+    for (let count = 1; count <= 30; count += 1) {
+        const option = document.createElement("option");
+        option.value = count;
+        option.textContent = count + " unit" + (count === 1 ? "" : "s");
+        countSelect.appendChild(option);
     }
-
-    if (!needsModule && course.modules.length === 0) {
-        alert("Add a module first, then add units to it.");
-        return;
-    }
-
+    countSelect.value = "1";
     dialog.showModal();
 }
 
@@ -1036,510 +1020,25 @@ function closeStructureDialog() {
 
 function saveStructureFromForm(event) {
     event.preventDefault();
-
-    const course = appData.courses.find(
-        item => item.id === structureCourseId
-    );
-
+    const course = appData.courses.find(item => item.id === structureCourseId);
     if (!course) return;
-
     const error = document.getElementById("structure-form-error");
     error.textContent = "";
-
-    const moduleName = document.getElementById("new-module-name").value.trim();
-    const unitName = document.getElementById("structure-unit-name").value.trim();
-
-    if (structureMode === "module") {
-        if (!moduleName) {
-            error.textContent = "Enter a module name.";
-            return;
-        }
-
-        const module = {
-            id: makeId(),
-            name: moduleName,
-            units: []
-        };
-
-        course.modules.push(module);
-
-        // Add a unit at the same time if the user supplied its title.
-        if (unitName) {
-            module.units.push({
-                id: makeId(),
-                name: unitName,
-                status: "new",
-                lastStudied: null
-            });
-        }
-    } else {
-        const moduleId = document.getElementById("structure-module").value;
-        const module = course.modules.find(item => item.id === moduleId);
-
-        if (!module) {
-            error.textContent = "Choose a module first.";
-            return;
-        }
-
-        if (!unitName) {
-            error.textContent = "Enter the actual unit or topic title.";
-            return;
-        }
-
-        module.units.push({
-            id: makeId(),
-            name: unitName,
-            status: "new",
-            lastStudied: null
-        });
+    const module = course.modules.find(item => item.id === document.getElementById("structure-module").value);
+    const count = Number(document.getElementById("structure-unit-count").value);
+    if (!module || !Number.isInteger(count) || count < 1 || count > 30) {
+        error.textContent = "Choose a module and how many units to add.";
+        return;
     }
-
-    // Regenerate today's tasks so newly added units can be considered.
+    for (let index = 0; index < count; index += 1) {
+        module.units.push({ id: makeId(), name: "Unit " + (module.units.length + 1), status: "new", lastStudied: null });
+    }
     delete appData.questsByDate[todayKey()];
-
     saveData();
     closeStructureDialog();
     generateQuests();
     renderAll();
 }
-
-/* Show explicitly marked revision topics and only very recent missed tasks. */
-function renderReview() {
-    const container = document.getElementById("review-list");
-    container.replaceChildren();
-    const items = [];
-
-    appData.courses.forEach(course => {
-        course.modules.forEach(module => {
-            module.units.forEach(unit => {
-                if (unit.status === "needs-practice") {
-                    items.push({
-                        title: unit.name,
-                        detail: `${course.code} · ${module.name} · Needs practice`
-                    });
-                }
-            });
-        });
-    });
-
-    // A daily reminder is temporary. Keep at most the two previous days visible.
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - 2);
-    const cutoffKey = todayKey(cutoff);
-    Object.entries(appData.questsByDate).forEach(([date, quests]) => {
-        if (date >= todayKey() || date < cutoffKey) return;
-        quests.forEach(quest => {
-            if (!quest.completed) {
-                items.push({
-                    title: quest.title,
-                    detail: `Unfinished daily task · ${date}`
-                });
-            }
-        });
-    });
-
-    if (!items.length) {
-        const empty = document.createElement("p");
-        empty.className = "empty-state";
-        empty.textContent =
-            "Your revision board is clear. Mark a unit 'Needs practice' to keep that topic here.";
-        container.appendChild(empty);
-        return;
-    }
-
-    items.forEach(item => {
-        const row = document.createElement("div");
-        row.className = "review-item";
-        const title = document.createElement("strong");
-        title.textContent = item.title;
-        const detail = document.createElement("p");
-        detail.textContent = item.detail;
-        row.append(title, detail);
-        container.appendChild(row);
-    });
-}
-
-/* Define milestones around consistent study and actual academic progress. */
-
-const achievements = [
-    {
-        id: "first-task",
-        symbol: "✓",
-        name: "First step",
-        description: "Complete your first study task.",
-        unlocked: () => appData.completedQuestIds.length >= 1
-    },
-    {
-        id: "five-tasks",
-        symbol: "↗",
-        name: "Finding rhythm",
-        description: "Complete five study tasks.",
-        unlocked: () => appData.completedQuestIds.length >= 5
-    },
-    {
-        id: "hundred-xp",
-        symbol: "✦",
-        name: "Steady effort",
-        description: "Earn 100 study XP.",
-        unlocked: () => appData.totalXP >= 100
-    },
-    {
-        id: "three-day-streak",
-        symbol: "◷",
-        name: "Three-day rhythm",
-        description: "Maintain a three-day study streak.",
-        unlocked: () => calculateStreak() >= 3
-    },
-    {
-        id: "first-unit",
-        symbol: "▤",
-        name: "Unit completed",
-        description: "Complete your first course unit.",
-        unlocked: () => appData.courses.some(course =>
-            allUnits(course).some(unit => unit.status === "completed")
-        )
-    },
-    {
-        id: "five-units",
-        symbol: "◆",
-        name: "Building knowledge",
-        description: "Complete five course units.",
-        unlocked: () => appData.courses.reduce(
-            (sum, course) => sum + courseProgress(course).completed,
-            0
-        ) >= 5
-    }
-];
-
-/* Render the milestone cards and remember which ones were earned. */
-
-function renderAchievements() {
-    const container = document.getElementById("achievement-list");
-    container.replaceChildren();
-
-    let unlockedCount = 0;
-
-    achievements.forEach(achievement => {
-        const unlocked = achievement.unlocked();
-
-        if (unlocked) {
-            unlockedCount++;
-
-            if (!appData.awardedAchievements.includes(achievement.id)) {
-                appData.awardedAchievements.push(achievement.id);
-            }
-        }
-
-        const card = document.createElement("article");
-        card.className = `achievement-card${unlocked ? "" : " locked"}`;
-
-        const symbol = document.createElement("span");
-        symbol.className = "achievement-symbol";
-        symbol.textContent = achievement.symbol;
-
-        const title = document.createElement("strong");
-        title.textContent = achievement.name;
-
-        const description = document.createElement("p");
-        description.textContent = achievement.description;
-
-        card.append(symbol, title, description);
-        container.appendChild(card);
-    });
-
-    document.getElementById("achievement-count").textContent =
-        `${unlockedCount} earned`;
-}
-
-/* Apply a selected palette and appearance mode without changing saved study data. */
-
-const PALETTE_KEY = "academicTrackerDmofeyPalette_v1";
-const PALETTES = {
-    "arctic-burgundy": "Arctic Burgundy",
-    "ocean": "Ocean",
-    "forest": "Forest",
-    "black-crimson": "Black Crimson",
-    "slate-violet": "Slate Violet"
-};
-
-function readAppearance() {
-    try {
-        const saved = JSON.parse(localStorage.getItem(PALETTE_KEY) || "{}");
-        return {
-            palette: Object.hasOwn(PALETTES, saved.palette) ? saved.palette : "slate-violet",
-            mode: ["light", "dark", "system"].includes(saved.mode) ? saved.mode : null
-        };
-    } catch {
-        return { palette: "slate-violet", mode: null };
-    }
-}
-
-function saveAppearance(preferences) {
-    try {
-        localStorage.setItem(PALETTE_KEY, JSON.stringify(preferences));
-    } catch (error) {
-        console.warn("Could not save appearance settings:", error);
-    }
-}
-
-function applyTheme(mode) {
-    const preferences = readAppearance();
-    const selectedMode = preferences.mode || (["light", "dark"].includes(mode) ? mode : "dark");
-    const isDark = selectedMode === "system"
-        ? Boolean(window.matchMedia?.("(prefers-color-scheme: dark)").matches)
-        : selectedMode === "dark";
-    const resolvedMode = isDark ? "dark" : "light";
-
-    document.body.classList.toggle("light-theme", !isDark);
-    document.body.dataset.theme = preferences.palette;
-    document.body.dataset.mode = resolvedMode;
-
-    const icon = document.getElementById("theme-icon");
-    const label = document.getElementById("theme-label");
-    if (icon) icon.textContent = isDark ? "☼" : "☾";
-    if (label) label.textContent = isDark ? "Light mode" : "Dark mode";
-
-    const meta = document.querySelector('meta[name="theme-color"]');
-    const background = getComputedStyle(document.body).getPropertyValue("--bg").trim();
-    if (meta && background) meta.content = background;
-
-    const paletteSelect = document.getElementById("palette-select");
-    const modeSelect = document.getElementById("appearance-mode-select");
-    if (paletteSelect) paletteSelect.value = preferences.palette;
-    if (modeSelect) modeSelect.value = selectedMode;
-}
-
-function initialiseTheme() {
-    let legacyMode = "dark";
-    try {
-        legacyMode = localStorage.getItem(THEME_KEY) || "dark";
-    } catch (error) {
-        console.warn("Could not load theme preference:", error);
-    }
-
-    const preferences = readAppearance();
-    if (!preferences.mode) {
-        preferences.mode = ["light", "dark"].includes(legacyMode) ? legacyMode : "dark";
-        saveAppearance(preferences);
-    }
-    applyTheme(preferences.mode);
-
-    const toggle = document.getElementById("theme-toggle");
-    toggle?.addEventListener("click", () => {
-        const current = readAppearance();
-        const next = document.body.dataset.mode === "dark" ? "light" : "dark";
-        current.mode = next;
-        saveAppearance(current);
-        try { localStorage.setItem(THEME_KEY, next); } catch {}
-        applyTheme(next);
-    });
-
-    document.getElementById("palette-select")?.addEventListener("change", event => {
-        const current = readAppearance();
-        if (!Object.hasOwn(PALETTES, event.target.value)) return;
-        current.palette = event.target.value;
-        saveAppearance(current);
-        applyTheme(current.mode);
-    });
-
-    document.getElementById("appearance-mode-select")?.addEventListener("change", event => {
-        const current = readAppearance();
-        if (!["light", "dark", "system"].includes(event.target.value)) return;
-        current.mode = event.target.value;
-        saveAppearance(current);
-        try { localStorage.setItem(THEME_KEY, event.target.value); } catch {}
-        applyTheme(current.mode);
-    });
-
-    window.matchMedia?.("(prefers-color-scheme: dark)")
-        .addEventListener?.("change", () => {
-            if (readAppearance().mode === "system") applyTheme("system");
-        });
-}
-
-/* Refresh all visible dashboard sections after a change. */
-
-function renderAll() {
-    renderStats();
-    renderQuests();
-    renderWeeklyStreak();
-    renderCourses();
-    renderReview();
-    renderAchievements();
-}
-
-/* Progress, navigation and the in-app Version 1.5 view. */
-
-function readSavedTrackerData() {
-    try {
-        const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
-        return data && Array.isArray(data.courses) ? data : null;
-    } catch {
-        return null;
-    }
-}
-
-function savedCourseUnits(course) {
-    return (course.modules || []).flatMap(module =>
-        (module.units || []).map(unit => ({
-            ...unit,
-            moduleName: module.name
-        }))
-    );
-}
-
-function renderProgressPage() {
-    const container = document.getElementById("progress-content");
-    if (!container) return;
-    const data = readSavedTrackerData();
-
-    if (!data) {
-        container.textContent = "Your saved study statistics will appear here.";
-        return;
-    }
-
-    const courses = data.courses;
-    const allUnits = courses.flatMap(course =>
-        savedCourseUnits(course).map(unit => ({ ...unit, courseCode: course.code }))
-    );
-    const completed = allUnits.filter(unit => unit.status === "completed").length;
-    const unfinished = allUnits.length - completed;
-    const overall = allUnits.length ? Math.round(completed / allUnits.length * 100) : 0;
-    const tasks = Object.entries(data.questsByDate || {}).flatMap(([date, list]) =>
-        (Array.isArray(list) ? list : []).map(task => ({ ...task, date }))
-    );
-    const completedTasks = tasks.filter(task => task.completed);
-    const dates = new Set(Array.isArray(data.studyDates) ? data.studyDates : []);
-
-    const summary = document.createElement("div");
-    summary.className = "v1-progress-summary";
-    summary.innerHTML =
-        '<article><span>Overall course progress</span><strong>' + overall + '%</strong></article>' +
-        '<article><span>Completed units</span><strong>' + completed + '</strong></article>' +
-        '<article><span>Unfinished units</span><strong>' + unfinished + '</strong></article>' +
-        '<article><span>Study XP</span><strong>' + (Number(data.totalXP) || 0) + '</strong></article>';
-
-    const track = document.createElement("div");
-    track.className = "v1-overall-track";
-    const fill = document.createElement("span");
-    fill.style.width = overall + "%";
-    track.appendChild(fill);
-
-    const list = document.createElement("div");
-    list.className = "v1-course-progress-list";
-    courses.forEach(course => {
-        const units = savedCourseUnits(course);
-        const done = units.filter(unit => unit.status === "completed").length;
-        const percent = units.length ? Math.round(done / units.length * 100) : 0;
-        const row = document.createElement("article");
-        row.className = "v1-course-progress";
-        const heading = document.createElement("div");
-        heading.innerHTML = "<strong></strong><span></span>";
-        heading.querySelector("strong").textContent = course.code + " · " + course.name;
-        heading.querySelector("span").textContent = units.length
-            ? done + " of " + units.length + " units · " + percent + "%"
-            : "No units added yet";
-        const bar = document.createElement("div");
-        bar.className = "v1-overall-track";
-        const barFill = document.createElement("span");
-        barFill.style.width = percent + "%";
-        bar.appendChild(barFill);
-        row.append(heading, bar);
-        list.appendChild(row);
-    });
-
-    const history = document.createElement("div");
-    history.className = "v1-activity-history";
-    const recentDates = [...dates].sort().reverse().slice(0, 7);
-    if (recentDates.length) {
-        recentDates.forEach(date => {
-            const dateTasks = completedTasks.filter(task => task.date === date);
-            const item = document.createElement("p");
-            item.textContent = new Date(date + "T12:00:00").toLocaleDateString("en-GB", {
-                weekday: "short", day: "numeric", month: "short"
-            }) + " · " + (dateTasks.length ? dateTasks.length + " task(s) completed" : "Study activity recorded");
-            history.appendChild(item);
-        });
-    } else {
-        history.textContent = "No study activity recorded yet.";
-    }
-
-    container.replaceChildren(summary, track, list);
-    const historyTitle = document.createElement("h3");
-    historyTitle.textContent = "Recent study activity";
-    container.append(historyTitle, history);
-}
-
-function openVersion15(page) {
-    const dialog = document.getElementById("version-15-dialog");
-    const frame = document.getElementById("version-15-frame");
-    if (!dialog || !frame) return;
-    const target = page === "study-group" ? "study-group" : "home";
-    frame.src = "https://okiemutedannymofey-oss.github.io/academic-tracker-1.5/Academic%20Tracker%201.5%20version%202/#" + target;
-    if (!dialog.open) dialog.showModal();
-}
-
-function initialiseVersion15Navigation() {
-    document.querySelectorAll("[data-open-v15]").forEach(link => {
-        link.addEventListener("click", event => {
-            event.preventDefault();
-            openVersion15(link.dataset.openV15);
-        });
-    });
-
-    document.getElementById("close-version-15")?.addEventListener("click", () => {
-        const dialog = document.getElementById("version-15-dialog");
-        const frame = document.getElementById("version-15-frame");
-        dialog?.close();
-        if (frame) frame.src = "";
-        applyTheme(readAppearance().mode || "dark");
-    });
-
-    document.querySelectorAll(".tracker-navigation a[href^='#']").forEach(link => {
-        link.addEventListener("click", () => {
-            document.querySelectorAll(".tracker-navigation a").forEach(item =>
-                item.classList.toggle("active", item === link)
-            );
-        });
-    });
-
-    window.addEventListener("message", event => {
-        if (event.origin !== location.origin || event.data?.source !== "academic-tracker-15-theme") return;
-        const color = String(event.data.background || "");
-        if (!/^#[\da-f]{3,8}$/i.test(color)) return;
-        const meta = document.querySelector('meta[name="theme-color"]');
-        if (meta) meta.content = color;
-        document.documentElement.style.backgroundColor = color;
-        document.body.style.backgroundColor = color;
-    });
-
-    renderProgressPage();
-
-    document.getElementById("export-tracker-data")?.addEventListener("click", () => {
-        const data = readSavedTrackerData();
-        const feedback = document.getElementById("settings-feedback");
-        if (!data) {
-            if (feedback) feedback.textContent = "There is no saved tracker data to download yet.";
-            return;
-        }
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = "academic-tracker-backup-" + todayKey() + ".json";
-        link.click();
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
-        if (feedback) feedback.textContent = "Your backup has been downloaded.";
-    });
-}
-
-const originalRenderAllForProgress = renderAll;
-renderAll = function() {
-    originalRenderAllForProgress();
-    renderProgressPage();
-};
-
-document.addEventListener("DOMContentLoaded", initialiseVersion15Navigation);
 
 /* Connect buttons and forms, then start the application. */
 
